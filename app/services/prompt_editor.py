@@ -83,7 +83,7 @@ Output must be concise (under 1000 tokens)."""
             
         return report
 
-    async def suggest_improvement(self, history_limit: int = 15):
+    async def run_editor(self, session_id: str = None, triggered_by: str = "manual", history_limit: int = 15):
         # 1. Fetch active prompt
         active_prompt = self.prompt_repo.get_active_prompt()
         if not active_prompt:
@@ -142,7 +142,8 @@ Analyze inputs and reinforce the SYSTEM PROMPT rules."""
                     new_prompt = self.prompt_repo.create_prompt(
                         version=latest_v + 1,
                         content=cleaned_content,
-                        is_active=True
+                        is_active=True,
+                        triggered_by=triggered_by
                     )
                     self.db.commit()
                     self.db.refresh(new_prompt)
@@ -161,3 +162,7 @@ Analyze inputs and reinforce the SYSTEM PROMPT rules."""
                 raise
 
         return active_prompt
+
+    async def suggest_improvement(self, history_limit: int = 15):
+        """Maintains backward compatibility for /edit endpoint"""
+        return await self.run_editor(triggered_by="manual", history_limit=history_limit)

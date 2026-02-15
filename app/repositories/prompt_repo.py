@@ -11,11 +11,12 @@ class PromptRepository:
     def get_active_prompt(self) -> Optional[Prompt]:
         return self.db.query(Prompt).filter(Prompt.is_active == True).order_by(Prompt.version.desc()).first()
 
-    def create_prompt(self, version: int, content: str, is_active: bool) -> Prompt:
+    def create_prompt(self, version: int, content: str, is_active: bool, triggered_by: str = "manual") -> Prompt:
         db_prompt = Prompt(
             version=version,
             content=content,
-            is_active=is_active
+            is_active=is_active,
+            triggered_by=triggered_by
         )
         self.db.add(db_prompt)
         self.db.commit()

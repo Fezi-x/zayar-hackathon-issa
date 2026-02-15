@@ -12,4 +12,5 @@ class Prompt(Base):
     version = Column(Integer, nullable=False)
     content = Column(Text, nullable=False)
     is_active = Column(Boolean, nullable=False, default=False)
+    triggered_by = Column(Text, nullable=False, default="manual")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

@@ -23,7 +23,23 @@ class EditResponse(BaseModel):
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     try:
         service = GeneratorService(db)
-        reply = await service.generate(request.message)
+        reply = await service.generate(request.session_id, request.message)
+
+        # Autonomous Editor Trigger Logic
+        try:
+            msg_repo = MessageRepository(db)
+            user_msg_count = msg_repo.count_user_messages(request.session_id)
+            if user_msg_count > 0 and user_msg_count % 5 == 0:
+                editor_service = PromptEditorService(db)
+                await editor_service.run_editor(
+                    session_id=request.session_id, 
+                    triggered_by="autonomous"
+                )
+                print(f"Autonomous editor triggered for session: {request.session_id}")
+        except Exception as e:
+            # Fail-Safe: Log error but do NOT crash /chat
+            print(f"Autonomous editor failed: {e}")
+
         return {"reply": reply}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -34,7 +50,7 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
 async def edit(db: Session = Depends(get_db)):
     try:
         service = PromptEditorService(db)
-        new_prompt = await service.suggest_improvement()
+        new_prompt = await service.run_editor(triggered_by="manual")
         return {
             "id": str(new_prompt.id),
             "version": new_prompt.version,

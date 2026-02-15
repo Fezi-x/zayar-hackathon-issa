@@ -11,9 +11,9 @@ class GeneratorService:
         self.message_repo = MessageRepository(db)
         self.llm_client = LLMClient()
 
-    async def generate(self, user_content: str, history_limit: int = 10):
+    async def generate(self, session_id: str, user_content: str, history_limit: int = 10):
         # 1. Save user message
-        self.message_repo.create_message(role="user", content=user_content)
+        self.message_repo.create_message(session_id=session_id, role="user", content=user_content)
 
         # 2. Fetch active prompt with integrity check
         from app.models.prompt import Prompt
@@ -43,6 +43,7 @@ class GeneratorService:
 
         # 6. Save assistant reply
         self.message_repo.create_message(
+            session_id=session_id,
             role="assistant", 
             content=reply, 
             prompt_version_id=active_prompt.id
