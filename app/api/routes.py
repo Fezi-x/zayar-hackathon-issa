@@ -16,8 +16,8 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
-    prompt_version: int
-    prompt_preview: str
+    prompt_version: Optional[int] = 1
+    prompt_preview: Optional[str] = ""
 
 class EditResponse(BaseModel):
     id: str
@@ -25,12 +25,15 @@ class EditResponse(BaseModel):
     content: str
 
 def generate_prompt_preview(content: str, max_length: int = 160) -> str:
-    if not content:
+    try:
+        if not content:
+            return ""
+        cleaned = " ".join(str(content).split())
+        if len(cleaned) <= max_length:
+            return cleaned
+        return cleaned[:max_length].rstrip() + "..."
+    except Exception:
         return ""
-    cleaned = " ".join(content.split())
-    if len(cleaned) <= max_length:
-        return cleaned
-    return cleaned[:max_length].rstrip() + "..."
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
@@ -53,24 +56,30 @@ async def chat(request: ChatRequest, db: Session = Depends(get_db)):
             # Fail-Safe: Log error but do NOT crash /chat
             print(f"Autonomous editor failed: {e}")
 
-        # Fetch Active Prompt for Response
+        # Absolute Fail-Safe Metadata Guard
         try:
             prompt_repo = PromptRepository(db)
             active_prompt = prompt_repo.get_active_prompt()
+            
             if active_prompt:
-                active_prompt_version = active_prompt.version
-                active_prompt_preview = generate_prompt_preview(active_prompt.content)
+                metadata = {
+                    "prompt_version": int(active_prompt.version or 1),
+                    "prompt_preview": generate_prompt_preview(active_prompt.content or "")
+                }
             else:
-                active_prompt_version = 1
-                active_prompt_preview = ""
+                metadata = {
+                    "prompt_version": 1,
+                    "prompt_preview": ""
+                }
         except Exception:
-            active_prompt_version = 1
-            active_prompt_preview = ""
+            metadata = {
+                "prompt_version": 1,
+                "prompt_preview": ""
+            }
 
         return {
             "reply": reply,
-            "prompt_version": active_prompt_version,
-            "prompt_preview": active_prompt_preview
+            **metadata
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

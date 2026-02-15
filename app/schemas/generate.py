@@ -6,7 +6,10 @@ class ChatRequest(BaseModel):
     message: str
 
 
+from typing import Optional
+
+
 class ChatResponse(BaseModel):
     reply: str
-    prompt_version: int
-    prompt_preview: str
+    prompt_version: Optional[int] = 1
+    prompt_preview: Optional[str] = ""
