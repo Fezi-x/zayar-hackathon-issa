@@ -8,3 +8,5 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     reply: str
+    prompt_version: int
+    prompt_preview: str
