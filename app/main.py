@@ -39,6 +39,7 @@ app = FastAPI(title="Zayar Hackathon ISSA", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "http://localhost:3000",
         "https://hackathon-issa-frontend.vercel.app"
     ],
     allow_credentials=True,
