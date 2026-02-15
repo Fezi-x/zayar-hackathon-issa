@@ -4,6 +4,7 @@ from sqlalchemy import text
 from app.core.database import engine, Base
 from app import models  # Ensure models are registered
 from app.api.routes import router
+import os
 
 
 @asynccontextmanager
@@ -19,6 +20,13 @@ async def lifespan(app: FastAPI):
         raise RuntimeError("Database connection failed") from e
     yield
 
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.environ.get("PORT", 8000)),
+    )
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
