@@ -30,7 +30,9 @@ app = FastAPI(title="Zayar Hackathon ISSA", lifespan=lifespan)
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "https://hackathon-issa-frontend.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,5 +42,5 @@ app.include_router(router)
 
 
 @app.get("/")
-def read_root():
-    return {"message": "Welcome to Zayar Hackathon ISSA API"}
+async def health():
+    return {"status": "ok"}
