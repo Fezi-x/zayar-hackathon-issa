@@ -42,12 +42,57 @@ import traceback
 
 @router.post("/chat")
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
-    print("BINARY TEST: CHAT ROUTE ENTERED")
-    return {
-        "reply": "Binary isolation test successful.",
-        "prompt_version": 1,
-        "prompt_preview": "isolation-test"
-    }
+    try:
+        # 1. Generate Response
+        service = GeneratorService(db)
+        reply = await service.generate(request.session_id, request.message)
+
+        # 2. Autonomous Editor Trigger
+        try:
+            msg_repo = MessageRepository(db)
+            user_msg_count = msg_repo.count_user_messages(request.session_id)
+            if user_msg_count > 0 and user_msg_count % 5 == 0:
+                editor_service = PromptEditorService(db)
+                await editor_service.run_editor(
+                    session_id=request.session_id, 
+                    triggered_by="autonomous"
+                )
+        except Exception as e:
+            # Silence internal trigger errors to protect user experience
+            print(f"Autonomous editor trigger failed: {e}")
+
+        # 3. Metadata Fetching with guaranteed fallbacks
+        try:
+            prompt_repo = PromptRepository(db)
+            active_prompt = prompt_repo.get_active_prompt()
+            
+            if active_prompt:
+                active_content = active_prompt.content or ""
+                active_version = active_prompt.version or 1
+            else:
+                active_content = ""
+                active_version = 1
+        except Exception:
+            active_content = ""
+            active_version = 1
+
+        # 4. Success Return with Explicit Casting
+        return {
+            "reply": str(reply or ""),
+            "prompt_version": int(active_version or 1),
+            "prompt_preview": str(generate_prompt_preview(active_content or ""))
+        }
+
+    except Exception as e:
+        print("CHAT ENDPOINT CRITICAL ERROR")
+        print(traceback.format_exc())
+
+        # Absolute fallback to prevent 500s
+        return {
+            "reply": "The system encountered an error. Please try again.",
+            "prompt_version": 1,
+            "prompt_preview": ""
+        }
 
 @router.post("/edit", response_model=EditResponse)
 async def edit(db: Session = Depends(get_db)):

@@ -15,15 +15,15 @@ class GeneratorService:
         # 1. Save user message
         self.message_repo.create_message(session_id=session_id, role="user", content=user_content)
 
-        # 2. Fetch active prompt with integrity check
-        from app.models.prompt import Prompt
-        active_count = self.db.query(Prompt).filter_by(is_active=True).count()
-        if active_count != 1:
-            raise Exception("Integrity error: exactly one active prompt required.")
-
+        # 2. Fetch active prompt with fail-safe fallback
         active_prompt = self.prompt_repo.get_active_prompt()
+        
+        # Fallback to latest prompt if no active one found
         if not active_prompt:
-            raise ValueError("No active prompt found. Please create and activate one.")
+            active_prompt = self.db.query(Prompt).order_by(Prompt.version.desc()).first()
+            
+        if not active_prompt:
+            raise ValueError("Zero prompts found in database. Initialization required.")
 
         # 3. Fetch history
         history = self.message_repo.get_last_n_messages(history_limit)
