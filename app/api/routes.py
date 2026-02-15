@@ -13,6 +13,9 @@ router = APIRouter()
 class ChatRequest(BaseModel):
     session_id: str
     message: str
+    
+    class Config:
+        extra = "allow"
 
 class ChatResponse(BaseModel):
     reply: str
@@ -35,56 +38,16 @@ def generate_prompt_preview(content: str, max_length: int = 160) -> str:
     except Exception:
         return ""
 
-@router.post("/chat", response_model=ChatResponse)
+import traceback
+
+@router.post("/chat")
 async def chat(request: ChatRequest, db: Session = Depends(get_db)):
-    try:
-        service = GeneratorService(db)
-        reply = await service.generate(request.session_id, request.message)
-
-        # Autonomous Editor Trigger Logic
-        try:
-            msg_repo = MessageRepository(db)
-            user_msg_count = msg_repo.count_user_messages(request.session_id)
-            if user_msg_count > 0 and user_msg_count % 5 == 0:
-                editor_service = PromptEditorService(db)
-                await editor_service.run_editor(
-                    session_id=request.session_id, 
-                    triggered_by="autonomous"
-                )
-                print(f"Autonomous editor triggered for session: {request.session_id}")
-        except Exception as e:
-            # Fail-Safe: Log error but do NOT crash /chat
-            print(f"Autonomous editor failed: {e}")
-
-        # Absolute Fail-Safe Metadata Guard
-        try:
-            prompt_repo = PromptRepository(db)
-            active_prompt = prompt_repo.get_active_prompt()
-            
-            if active_prompt:
-                metadata = {
-                    "prompt_version": int(active_prompt.version or 1),
-                    "prompt_preview": generate_prompt_preview(active_prompt.content or "")
-                }
-            else:
-                metadata = {
-                    "prompt_version": 1,
-                    "prompt_preview": ""
-                }
-        except Exception:
-            metadata = {
-                "prompt_version": 1,
-                "prompt_preview": ""
-            }
-
-        return {
-            "reply": reply,
-            **metadata
-        }
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+    print("BINARY TEST: CHAT ROUTE ENTERED")
+    return {
+        "reply": "Binary isolation test successful.",
+        "prompt_version": 1,
+        "prompt_preview": "isolation-test"
+    }
 
 @router.post("/edit", response_model=EditResponse)
 async def edit(db: Session = Depends(get_db)):

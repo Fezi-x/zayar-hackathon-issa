@@ -39,7 +39,6 @@ app = FastAPI(title="Zayar Hackathon ISSA", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
         "https://hackathon-issa-frontend.vercel.app"
     ],
     allow_credentials=True,
@@ -49,6 +48,20 @@ app.add_middleware(
 
 app.include_router(router)
 
+from fastapi import Request
+from fastapi.responses import JSONResponse
+import traceback
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    print("GLOBAL UNHANDLED EXCEPTION")
+    print("PATH:", request.url.path)
+    print(traceback.format_exc())
+
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
 
 @app.get("/")
 async def health():
