@@ -10,19 +10,20 @@ from typing import Optional
 
 router = APIRouter()
 
-class GenerateRequest(BaseModel):
-    user_message: str
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
 
 class EditResponse(BaseModel):
     id: str
     version: int
     content: str
 
-@router.post("/generate")
-async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
+@router.post("/chat")
+async def chat(request: ChatRequest, db: Session = Depends(get_db)):
     try:
         service = GeneratorService(db)
-        reply = await service.generate(request.user_message)
+        reply = await service.generate(request.message)
         return {"reply": reply}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

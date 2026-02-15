@@ -1,10 +1,10 @@
 from pydantic import BaseModel, Field
 
 
-class GenerateRequest(BaseModel):
-    user_message: str = Field(..., min_length=1)
+class ChatRequest(BaseModel):
+    session_id: str
+    message: str
 
 
-class GenerateResponse(BaseModel):
+class ChatResponse(BaseModel):
     reply: str
-    prompt_version: int
