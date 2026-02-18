@@ -1,4 +1,4 @@
-# ISSA Autonomous Prompt-Evolving AI Chat System
+# Self-Learning Prompt Validation System
 
 A production-deployed AI chat system with autonomous prompt evolution, version tracking, and frontend diff visualization.
 
